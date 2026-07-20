@@ -1,0 +1,29 @@
+services:
+  web:
+    build: .
+    container_name: flight-api
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: db
+      DB_NAME: flightdb
+      DB_USER: berk
+      DB_PASSWORD: "1234"
+      DB_PORT: "5432"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:17
+    container_name: flight-db
+    environment:
+      POSTGRES_DB: flightdb
+      POSTGRES_USER: berk
+      POSTGRES_PASSWORD: "1234"
+    ports:
+      - "5432:5432"
+    volumes:
+      - flight-data:/var/lib/postgresql/data
+
+volumes:
+  flight-data:
