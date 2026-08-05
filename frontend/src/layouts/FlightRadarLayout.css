@@ -1,0 +1,64 @@
+.radar-app {
+  width: 100%;
+  height: 100vh;
+  padding: 10px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(30, 64, 175, 0.22), transparent 28%),
+    #080e18;
+}
+
+.radar-map-shell {
+  position: relative;
+  height: calc(100vh - 76px);
+  min-height: 420px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 15px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.radar-map-area,
+.radar-map-area .map-card,
+.radar-map-area .flight-map {
+  width: 100%;
+  height: 100%;
+}
+
+.radar-panel-area {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 1000;
+  width: 306px;
+  pointer-events: none;
+}
+
+.radar-panel-area > * {
+  width: 100%;
+  max-height: 100%;
+  pointer-events: auto;
+}
+
+.radar-panel-area .flight-detail-panel {
+  position: static;
+  width: 100%;
+  max-height: 100%;
+  margin: 0;
+  overflow-y: auto;
+}
+
+@media (max-width: 760px) {
+  .radar-app { padding: 6px; }
+  .radar-map-shell { height: calc(100vh - 112px); }
+  .radar-panel-area {
+    top: auto;
+    right: 6px;
+    bottom: 6px;
+    left: 6px;
+    width: auto;
+    height: min(68vh, 540px);
+  }
+}
