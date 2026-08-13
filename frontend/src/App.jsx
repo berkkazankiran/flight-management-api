@@ -1,8 +1,6 @@
   import {
   useCallback,
   useEffect,
-  useMemo,
-  useRef,
   useState,
 } from "react";
 
@@ -20,7 +18,7 @@
   function App() {
     const [flights, setFlights] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+    const [, setError] = useState("");
     const [searchText, setSearchText] = useState("");
     const [selectedCountry, setSelectedCountry] = useState("all");
     const [lastUpdated, setLastUpdated] = useState(null);
@@ -29,22 +27,19 @@
       flightHistory,
       estimatedDepartureAirport,
       estimatedDestinationAirport,
-      historyError,
 } = useFlightHistory(trackedFlight);
     useFlightSocket({
   setFlights,
   setLastUpdated,
 });
     const [mapBounds, setMapBounds] = useState(null);
+    const [mapZoom, setMapZoom] = useState(6);
     const handleBoundsChange = useCallback((bounds, zoom) => {
       setMapBounds(bounds);
       setMapZoom(zoom);
     }, []);
-    const [mapZoom, setMapZoom] = useState(6);
-    const [flightTrail, setFlightTrail] = useState([]);
-    const lastTrailPositionRef = useRef(null);
-    const fetchFlights = async (
-  bounds = mapBounds
+    const fetchFlights = useCallback(async (
+  bounds = null
 ) => {
   try {
     setError("");
@@ -68,23 +63,17 @@
   } finally {
     setLoading(false);
   }
-};
-
+}, []);
     
   useEffect(() => {
-  if (!mapBounds) {
-    fetchFlights(null);
-    return;
-  }
-
   const timeoutId = window.setTimeout(() => {
     fetchFlights(mapBounds);
-  }, 500);
+  }, mapBounds ? 500 : 0);
 
   return () => {
     window.clearTimeout(timeoutId);
   };
-}, [mapBounds]);
+}, [mapBounds, fetchFlights]);
     
   const {
   countries,

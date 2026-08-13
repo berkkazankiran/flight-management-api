@@ -33,9 +33,6 @@ function FlightDetailPanel({
     const icao24 = trackedPlane?.icao24;
 
     if (!icao24) {
-      setAircraftInformation(null);
-      setAircraftLoading(false);
-      setAircraftNotFound(false);
       return undefined;
     }
 

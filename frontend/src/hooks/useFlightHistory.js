@@ -21,11 +21,6 @@ function useFlightHistory(trackedFlight) {
 
   useEffect(() => {
     if (!trackedFlight) {
-      setFlightHistory([]);
-      setEstimatedDepartureAirport(null);
-      setEstimatedDestinationAirport(null);
-      setHistoryError("");
-
       return undefined;
     }
 

@@ -19,3 +19,8 @@ Thumbs.db
 .log
 
 .tar
+
+k8s/secret.yaml
+
+tar/
+*.tar

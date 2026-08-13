@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flight-updater
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: flight-updater
+
+  template:
+    metadata:
+      labels:
+        app: flight-updater
+
+    spec:
+      containers:
+        - name: flight-updater
+          image: berkkazankiran/flight-updater:latest
+          imagePullPolicy: Always
+
+          command: ["python", "updater.py"]
+
+          envFrom:
+            - configMapRef:
+                name: flight-config
+
+            - secretRef:
+                name: flight-secrets

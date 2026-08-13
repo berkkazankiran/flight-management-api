@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flight-redis
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: flight-redis
+
+  template:
+    metadata:
+      labels:
+        app: flight-redis
+
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 6379
+
+          args:
+            - "redis-server"
+            - "--appendonly"
+            - "yes"
+
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: redis-pvc
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector:
+    app: flight-redis
+
+  ports:
+    - port: 6379
+      targetPort: 6379
+
+  type: ClusterIP

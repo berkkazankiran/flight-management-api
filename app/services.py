@@ -33,6 +33,61 @@ def get_access_token():
 
     return response.json()["access_token"]
 
+def get_opensky_flight_route(icao24):
+    try:
+        token = get_access_token()
+
+        import time
+
+        now = int(time.time())
+
+        response = requests.get(
+            "https://opensky-network.org/api/flights/aircraft",
+            params={
+                "icao24": icao24,
+                "begin": now - 86400,
+                "end": now,
+            },
+            headers={
+                "Authorization": f"Bearer {token}"
+            },
+            timeout=30,
+        )
+
+        response.raise_for_status()
+
+        flights = response.json()
+
+        if not flights:
+            return None
+
+       
+        flight = flights[-1]
+
+        return {
+            "departure_icao":
+                flight.get("estDepartureAirport"),
+
+            "arrival_icao":
+                flight.get("estArrivalAirport"),
+
+            "callsign":
+                (
+                    flight.get("callsign").strip()
+                    if flight.get("callsign")
+                    else None
+                ),
+        }
+
+    except Exception as error:
+        print(
+            "OpenSky flight route error:",
+            repr(error),
+            flush=True,
+        )
+
+        return None
+
 
 def convert_state(state):
     return {
@@ -281,7 +336,6 @@ def load_airports():
         for row in reader:
             airport_type = row.get("type", "").strip()
 
-            # Kapalı, küçük, helikopter ve deniz havaalanlarını alma.
             if airport_type not in {
                 "large_airport",
                 "medium_airport",
@@ -331,6 +385,27 @@ def load_airports():
     )
 
     return airports
+
+def find_airport_by_icao(icao_code):
+    if not icao_code:
+        return None
+
+    icao_code = icao_code.strip().upper()
+
+    for airport in load_airports():
+        if airport["icao_code"].upper() == icao_code:
+            return {
+                "icao_code": airport["icao_code"],
+                "iata_code": airport["iata_code"],
+                "name": airport["name"],
+                "city": airport["city"],
+                "country_code": airport["country_code"],
+                "latitude": airport["latitude"],
+                "longitude": airport["longitude"],
+                "distance_km": None,
+            }
+
+    return None
 
 def calculate_destination_point(
     latitude,
@@ -506,10 +581,30 @@ def estimate_destination_airport(
         )
     )
 
-    nearest_airport = None
-    nearest_distance = float("inf")
+    best_airport = None
+    best_score = float("inf")
+    best_target_distance = None
+
+    excluded_name_keywords = (
+        "army air base",
+        "air force base",
+        "military",
+        "naval air",
+        "airbase",
+        "air base",
+    )
 
     for airport in load_airports():
+        airport_name = (
+            airport.get("name") or ""
+        ).lower()
+
+        if any(
+            keyword in airport_name
+            for keyword in excluded_name_keywords
+        ):
+            continue
+
         distance_from_plane = calculate_distance_km(
             latitude,
             longitude,
@@ -527,40 +622,47 @@ def estimate_destination_airport(
             airport["longitude"],
         )
 
-        if distance_from_target < nearest_distance:
-            nearest_distance = distance_from_target
-            nearest_airport = airport
-    
-    if nearest_airport is None:
-        return None
+        if distance_from_target > 1000:
+            continue
 
-    if nearest_distance > 1000:
-        print(
-        f"Airport rejected. Distance: {nearest_distance:.2f} km",
-        flush=True,
-        )
+        score = distance_from_target
+
+        if airport.get("iata_code"):
+            score *= 0.65
+        else:
+            score *= 1.35
+
+        if airport.get("type") == "large_airport":
+            score *= 0.70
+        elif airport.get("type") == "medium_airport":
+            score *= 1.00
+
+        if score < best_score:
+            best_score = score
+            best_airport = airport
+            best_target_distance = distance_from_target
+
+    if best_airport is None:
         return None
 
     route_points = calculate_great_circle_route(
         latitude,
         longitude,
-        nearest_airport["latitude"],
-        nearest_airport["longitude"],
+        best_airport["latitude"],
+        best_airport["longitude"],
         point_count=50,
     )
 
-
-
     return {
-        "icao_code": nearest_airport["icao_code"],
-        "iata_code": nearest_airport["iata_code"],
-        "name": nearest_airport["name"],
-        "city": nearest_airport["city"],
-        "country_code": nearest_airport["country_code"],
-        "latitude": nearest_airport["latitude"],
-        "longitude": nearest_airport["longitude"],
+        "icao_code": best_airport["icao_code"],
+        "iata_code": best_airport["iata_code"],
+        "name": best_airport["name"],
+        "city": best_airport["city"],
+        "country_code": best_airport["country_code"],
+        "latitude": best_airport["latitude"],
+        "longitude": best_airport["longitude"],
         "distance_km": round(
-            nearest_distance,
+            best_target_distance,
             2,
         ),
         "target_latitude": round(
@@ -572,6 +674,7 @@ def estimate_destination_airport(
             5,
         ),
         "route_points": route_points,
+        "estimated": True,
     }
 
 

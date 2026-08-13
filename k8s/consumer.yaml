@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flight-consumer
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: flight-consumer
+
+  template:
+    metadata:
+      labels:
+        app: flight-consumer
+
+    spec:
+      containers:
+        - name: flight-consumer
+          image: berkkazankiran/flight-consumer:latest
+          imagePullPolicy: Always
+
+          command: ["python", "consumer.py"]
+
+          envFrom:
+            - configMapRef:
+                name: flight-config
+
+            - secretRef:
+                name: flight-secrets

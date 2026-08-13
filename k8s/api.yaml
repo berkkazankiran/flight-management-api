@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flight-api
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: flight-api
+
+  template:
+    metadata:
+      labels:
+        app: flight-api
+
+    spec:
+      containers:
+        - name: flight-api
+          image: berkkazankiran/flight-api:latest
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 5000
+
+          startupProbe:
+            httpGet:
+              path: /
+              port: 5000
+            periodSeconds: 2
+            failureThreshold: 15
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          envFrom:
+            - configMapRef:
+                name: flight-config
+
+            - secretRef:
+                name: flight-secrets
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flight-api-service
+
+spec:
+  selector:
+    app: flight-api
+
+  ports:
+    - port: 5000
+      targetPort: 5000
+
+  type: ClusterIP

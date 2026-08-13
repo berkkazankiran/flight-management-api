@@ -9,6 +9,8 @@ from app.services import (
     publish_flights_to_kafka,
     find_nearest_airport,
     estimate_destination_airport,
+    find_airport_by_icao,
+    get_opensky_flight_route,
 )
 
 
@@ -254,8 +256,6 @@ def get_flight_history(icao24):
 
         rows = cursor.fetchall()
 
-        # Kayıtlar arasında 5 dakikadan uzun boşluk varsa
-        # yalnızca son kesintisiz uçuş bölümünü kullan.
         session_start_index = 0
 
         for index in range(1, len(rows)):
@@ -305,15 +305,49 @@ def get_flight_history(icao24):
         estimated_departure_airport = None
         estimated_destination_airport = None
 
-        if history:
-            if len(history) >= 20:
-                first_position = history[0]
+        opensky_route = get_opensky_flight_route(icao24)
 
-                estimated_departure_airport = find_nearest_airport(
+        if opensky_route:
+            departure_icao = opensky_route.get(
+                "departure_icao"
+            )
+
+            arrival_icao = opensky_route.get(
+                "arrival_icao"
+            )
+
+            if departure_icao:
+                estimated_departure_airport = (
+                    find_airport_by_icao(
+                        departure_icao
+                    )
+                )
+
+            if arrival_icao:
+                estimated_destination_airport = (
+                    find_airport_by_icao(
+                        arrival_icao
+                    )
+                )
+
+        if (
+            estimated_departure_airport is None
+            and history
+            and len(history) >= 20
+        ):
+            first_position = history[0]
+
+            estimated_departure_airport = (
+                find_nearest_airport(
                     first_position["latitude"],
                     first_position["longitude"],
                 )
+            )
 
+        if (
+            estimated_destination_airport is None
+            and history
+        ):
             latest_position = history[-1]
 
             estimated_destination_airport = (

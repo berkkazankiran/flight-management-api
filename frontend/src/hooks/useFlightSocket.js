@@ -13,10 +13,12 @@ function useFlightSocket({
   const updateTimerRef = useRef(null);
 
   useEffect(() => {
-    const socket = io(SOCKET_URL, {
-      transports: ["websocket"],
-    });
+  const pendingUpdates =
+    pendingUpdatesRef.current;
 
+  const socket = io(SOCKET_URL, {
+    transports: ["websocket"],
+  });
     function flushFlightUpdates() {
       const pendingUpdates =
         pendingUpdatesRef.current;
@@ -85,7 +87,7 @@ function useFlightSocket({
         return;
       }
 
-      pendingUpdatesRef.current.set(
+      pendingUpdates.set(
         icao24,
         updatedFlight
       );
@@ -136,7 +138,7 @@ function useFlightSocket({
         );
       }
 
-      pendingUpdatesRef.current.clear();
+      pendingUpdates.clear();
     };
   }, [setFlights, setLastUpdated]);
 }
